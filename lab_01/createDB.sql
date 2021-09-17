@@ -129,7 +129,7 @@ CREATE TABLE Score
     create_date timestamp DEFAULT NOW(),
     FOREIGN KEY (competition) REFERENCES Competition (id),
     FOREIGN KEY (judge) REFERENCES Profile (id),
-    FOREIGN KEY (participant) REFERENCES Profile (id),
+    FOREIGN KEY (participant) REFERENCES Participant (id),
     CONSTRAINT Score_score_gte_0 CHECK(score >= 0),
     CONSTRAINT Score_score_lte_10 CHECK(score <= 10)
 );
