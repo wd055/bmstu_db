@@ -5,7 +5,9 @@ DROP TABLE IF EXISTS Profile CASCADE;
 DROP TABLE IF EXISTS School CASCADE;
 DROP TABLE IF EXISTS Competition CASCADE;
 DROP TABLE IF EXISTS Flow CASCADE;
+DROP TABLE IF EXISTS Subflow CASCADE;
 DROP TABLE IF EXISTS Participant CASCADE;
+DROP TABLE IF EXISTS Judge CASCADE;
 DROP TABLE IF EXISTS Score CASCADE;
 
 -- ************************************** "User"
@@ -59,6 +61,25 @@ CREATE INDEX School_user ON School
     "user"
 );
 
+-- ************************************** SchoolSettings
+
+CREATE TABLE SchoolSettings
+(
+    id serial NOT NULL PRIMARY KEY,
+    school int NOT NULL UNIQUE,
+    title varchar(128) NOT NULL,
+    default_max_in_subflow int CHECK (default_max_in_subflow > 0),
+    default_min_in_subflow int CHECK (default_min_in_subflow > 0),
+    default_max_d int CHECK (default_max_d > 0 and default_max_d < 10),
+    default_one_duration int CHECK (default_one_duration > 0),
+    FOREIGN KEY (school) REFERENCES School (id)
+);
+
+CREATE INDEX SchoolSettings_school ON SchoolSettings
+(
+    school
+);
+
 -- ************************************** Competition
 
 CREATE TABLE Competition
@@ -89,6 +110,28 @@ CREATE INDEX Flow_competition ON Flow
     competition
 );
 
+-- ************************************** Subflow
+
+CREATE TABLE Subflow
+(
+    id serial NOT NULL PRIMARY KEY,
+    competition int NOT NULL,
+    flow int NOT NULL,
+    flow_position int,
+    FOREIGN KEY (competition) REFERENCES Competition (id),
+    FOREIGN KEY (flow) REFERENCES Flow (id)
+);
+
+CREATE INDEX Sublow_competition ON Subflow
+(
+    competition
+);
+
+CREATE INDEX Sublow_flow ON Subflow
+(
+    flow
+);
+
 -- ************************************** Participant
 
 CREATE TABLE Participant
@@ -96,9 +139,11 @@ CREATE TABLE Participant
     id serial NOT NULL PRIMARY KEY,
     competition int NOT NULL,
     flow int NOT NULL,
+    subflow int NOT NULL,
     profile int NOT NULL,
     FOREIGN KEY (competition) REFERENCES Competition (id),
     FOREIGN KEY (flow) REFERENCES Flow (id),
+    FOREIGN KEY (subflow) REFERENCES Subflow (id),
     FOREIGN KEY (profile) REFERENCES Profile (id)
 );
 
@@ -117,6 +162,28 @@ CREATE INDEX Participant_profile ON Participant
     profile
 );
 
+-- ************************************** Judge
+
+CREATE TABLE Judge
+(
+    id serial NOT NULL PRIMARY KEY,
+    competition int NOT NULL,
+    profile int NOT NULL,
+    signature boolean DEFAULT FALSE,
+    FOREIGN KEY (competition) REFERENCES Competition (id),
+    FOREIGN KEY (profile) REFERENCES Profile (id)
+);
+
+CREATE INDEX Judge_competition ON Judge
+(
+    competition
+);
+
+CREATE INDEX Judge_profile ON Judge
+(
+    profile
+);
+
 -- ************************************** Score
 
 CREATE TABLE Score
@@ -130,8 +197,7 @@ CREATE TABLE Score
     FOREIGN KEY (competition) REFERENCES Competition (id),
     FOREIGN KEY (judge) REFERENCES Profile (id),
     FOREIGN KEY (participant) REFERENCES Participant (id),
-    CONSTRAINT Score_score_gte_0 CHECK(score >= 0),
-    CONSTRAINT Score_score_lte_10 CHECK(score <= 10)
+    CONSTRAINT Score_score_limit CHECK(score >= 0 and score <= 10)
 );
 
 CREATE INDEX Score_competition ON Score
