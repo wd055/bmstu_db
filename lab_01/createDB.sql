@@ -3,6 +3,7 @@
 DROP TABLE IF EXISTS "User" CASCADE;
 DROP TABLE IF EXISTS Profile CASCADE;
 DROP TABLE IF EXISTS School CASCADE;
+DROP TABLE IF EXISTS SchoolSettings CASCADE;
 DROP TABLE IF EXISTS Competition CASCADE;
 DROP TABLE IF EXISTS Flow CASCADE;
 DROP TABLE IF EXISTS Subflow CASCADE;
@@ -25,24 +26,6 @@ CREATE INDEX User_nickname ON "User"
     username
 );
 
--- ************************************** Profile
-
-CREATE TABLE Profile
-(
-    id serial NOT NULL PRIMARY KEY,
-    "user" int NOT NULL UNIQUE,
-    birthday date,
-    first_name varchar(128),
-    last_name varchar(128),
-    create_date timestamp DEFAULT NOW(),
-    FOREIGN KEY ("user") REFERENCES "User" (id)
-);
-
-CREATE INDEX Profile_user ON Profile
-(
-    "user"
-);
-
 -- ************************************** School
 
 CREATE TABLE School
@@ -57,6 +40,26 @@ CREATE TABLE School
 );
 
 CREATE INDEX School_user ON School
+(
+    "user"
+);
+
+-- ************************************** Profile
+
+CREATE TABLE Profile
+(
+    id serial NOT NULL PRIMARY KEY,
+    "user" int NOT NULL UNIQUE,
+    school int,
+    birthday date,
+    first_name varchar(128),
+    last_name varchar(128),
+    create_date timestamp DEFAULT NOW(),
+    FOREIGN KEY ("user") REFERENCES "User" (id),
+    FOREIGN KEY (school) REFERENCES School (id)
+);
+
+CREATE INDEX Profile_user ON Profile
 (
     "user"
 );

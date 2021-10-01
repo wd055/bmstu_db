@@ -1,3 +1,4 @@
+from sys import path
 import psycopg2
 from psycopg2 import Error
 import random
@@ -20,10 +21,8 @@ try:
     count_schools = int(input('schools count:'))
     count_competitions = int(input('competitions count:'))
     count_flows = int(input('flows in comp.:'))
-    count_participants = 16
+    count_participants = int(input('part. in flows:'))
     count_scores = 8
-    print('participant in flow: {count_participants}'.format(
-        count_participants=count_participants))
     print('score by participant: {count_scores}'.format(
         count_scores=count_scores))
 
@@ -31,7 +30,7 @@ try:
     if count_schools:
         insert_query_user = []
         insert_query_school = []
-        for i in range(count_profiles):
+        for i in range(count_schools):
             insert_query_user.append("('{username}', '{email}', '{passworad}')".format(
                 username=mimesis.Person('en').username(),
                 email=mimesis.Person('en').email(),
@@ -58,21 +57,23 @@ try:
                 username=mimesis.Person('en').username(),
                 email=mimesis.Person('en').email(),
                 passworad=mimesis.Person('en').title()))
-            insert_query_profile.append("('{user}', '{first_name}', '{last_name}')".format(
+            insert_query_profile.append("('{user}', '{first_name}', '{last_name}', '{school}')".format(
                 user=i+1,
                 first_name=mimesis.Person('ru').first_name(),
                 last_name=mimesis.Person('ru').last_name(),
+                school=random.randint(1, count_schools) if count_schools else None,
             ))
         cursor.execute(
             'INSERT INTO "User" (username, email, password) VALUES ' + (', ').join(insert_query_user))
         connection.commit()
         cursor.execute(
-            'INSERT INTO Profile ("user", first_name, last_name) VALUES ' + (', ').join(insert_query_profile))
+            'INSERT INTO Profile ("user", first_name, last_name, school) VALUES ' + (', ').join(insert_query_profile))
         connection.commit()
 
     if count_competitions and count_schools:
         insert_query_competitions = []
         insert_query_flows = []
+        insert_query_subflows = []
         insert_query_participants = []
         insert_query_scores = []
         for i in range(count_competitions):
@@ -84,11 +85,18 @@ try:
                 insert_query_flows.append("('{competition}')".format(
                     competition=i + 1
                 ))
+                for k in range(3):
+                    insert_query_subflows.append("('{competition}', '{flow}', '{flow_position}' )".format(
+                        competition=i + 1,
+                        flow=i*count_flows + j+1,
+                        flow_position=k + 1
+                    ))
                 if count_profiles:
                     for k in range(count_participants):
-                        insert_query_participants.append("('{competition}', '{flow}', '{profile}')".format(
+                        insert_query_participants.append("('{competition}', '{flow}', '{subflow}', '{profile}')".format(
                             competition=i + 1,
                             flow=i*count_flows + j+1,
+                            subflow = (i*count_flows + j) * 3 + k % 3 + 1,
                             profile=random.randint(1, count_profiles)
                         ))
                         for g in range(count_scores):
@@ -104,9 +112,11 @@ try:
         connection.commit()
         cursor.execute(
             "INSERT INTO Flow (competition) VALUES " + (", ").join(insert_query_flows))
+        cursor.execute(
+            "INSERT INTO Subflow (competition, flow, flow_position) VALUES " + (", ").join(insert_query_subflows))
         connection.commit()
         cursor.execute(
-            "INSERT INTO Participant (competition, flow, profile) VALUES " + (", ").join(insert_query_participants))
+            "INSERT INTO Participant (competition, flow, subflow, profile) VALUES " + (", ").join(insert_query_participants))
         connection.commit()
         cursor.execute(
             "INSERT INTO Score (competition, judge, participant, score) VALUES " + (", ").join(insert_query_scores))
