@@ -57,17 +57,18 @@ try:
                 username=mimesis.Person('en').username(),
                 email=mimesis.Person('en').email(),
                 passworad=mimesis.Person('en').title()))
-            insert_query_profile.append("('{user}', '{first_name}', '{last_name}', '{school}')".format(
+            insert_query_profile.append("('{user}', '{first_name}', '{last_name}', '{school}', '{trainer}')".format(
                 user=i+1,
                 first_name=mimesis.Person('ru').first_name(),
                 last_name=mimesis.Person('ru').last_name(),
                 school=random.randint(1, count_schools) if count_schools else None,
+                trainer=random.randint(1, i) if i > 0 else 1,
             ))
         cursor.execute(
             'INSERT INTO "User" (username, email, password) VALUES ' + (', ').join(insert_query_user))
         connection.commit()
         cursor.execute(
-            'INSERT INTO Profile ("user", first_name, last_name, school) VALUES ' + (', ').join(insert_query_profile))
+            'INSERT INTO Profile ("user", first_name, last_name, school, trainer) VALUES ' + (', ').join(insert_query_profile))
         connection.commit()
 
     if count_competitions and count_schools:
@@ -76,11 +77,18 @@ try:
         insert_query_subflows = []
         insert_query_participants = []
         insert_query_scores = []
+        insert_query_judges = []
         for i in range(count_competitions):
             insert_query_competitions.append("('{school}', '{title}')".format(
                 school=random.randint(1, count_schools),
                 title=mimesis.Person('ru').title(),
             ))
+            for j in range(50):
+                insert_query_judges.append("('{competition}', '{profile}')".format(
+                    competition=i + 1,
+                    profile=random.randint(1, count_profiles),
+                ))
+
             for j in range(count_flows):
                 insert_query_flows.append("('{competition}')".format(
                     competition=i + 1
@@ -120,6 +128,8 @@ try:
         connection.commit()
         cursor.execute(
             "INSERT INTO Score (competition, judge, participant, score) VALUES " + (", ").join(insert_query_scores))
+        cursor.execute(
+            "INSERT INTO Judge (competition, profile) VALUES " + (", ").join(insert_query_judges))
         connection.commit()
 
 

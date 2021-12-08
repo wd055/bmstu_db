@@ -51,12 +51,14 @@ CREATE TABLE Profile
     id serial NOT NULL PRIMARY KEY,
     "user" int NOT NULL UNIQUE,
     school int,
+    trainer int,
     birthday date,
     first_name varchar(128),
     last_name varchar(128),
     create_date timestamp DEFAULT NOW(),
     FOREIGN KEY ("user") REFERENCES "User" (id),
-    FOREIGN KEY (school) REFERENCES School (id)
+    FOREIGN KEY (school) REFERENCES School (id),
+    FOREIGN KEY (trainer) REFERENCES Profile (id)
 );
 
 CREATE INDEX Profile_user ON Profile
@@ -144,6 +146,7 @@ CREATE TABLE Participant
     flow int NOT NULL,
     subflow int NOT NULL,
     profile int NOT NULL,
+    result int,
     FOREIGN KEY (competition) REFERENCES Competition (id),
     FOREIGN KEY (flow) REFERENCES Flow (id),
     FOREIGN KEY (subflow) REFERENCES Subflow (id),

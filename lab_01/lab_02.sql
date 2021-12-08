@@ -20,7 +20,7 @@ FROM Participant
 WHERE competition in (
     SELECT id
     FROM Competition
-    WHERE school = 2
+    WHERE school = 3
     );
 
 -- 5. Инструкция SELECT, использующая предикат EXISTS с вложенным подзапросом.
@@ -217,14 +217,19 @@ FROM Score_sum as smT
 GROUP BY participant;
 
 -- 23. Инструкция SELECT, использующая рекурсивное обобщенное табличное выражение.
+-- Подчиненные тренера и его детей ...
 
--- WITH School_CTE (id) AS (
---     SELECT c.school
---     FROM Participant
---     JOIN competition c on participant.competition = c.id
---     GROUP BY c.school
--- )
--- SELECT * FROM School_CTE;
+WITH RECURSIVE Profile_Trainers (id, trainer, level) AS (
+    SELECT Pr.id, Pr.trainer, 0
+    FROM Profile AS Pr
+    WHERE Pr.id=5
+    UNION ALL
+    SELECT Pr.id, Pr.trainer, level+1
+    FROM Profile AS Pr
+    INNER JOIN Profile_Trainers AS PrT ON Pr.trainer = PrT.id
+    WHERE level < 3
+)
+SELECT * FROM Profile_Trainers;
 
 -- 24. Оконные функции. Использование конструкций MIN/MAX/AVG OVER()
 
@@ -236,3 +241,52 @@ FROM participant
 LEFT JOIN score on participant.id = score.participant;
 
 -- 25. Оконные фнкции для устранения дублей
+
+SELECT row_number() over (partition by participant) as score_num, id, participant, score, avg(score) over (partition by participant) as avg_score
+FROM Score;
+
+-- extra
+
+DROP TABLE IF EXISTS table1;
+DROP TABLE IF EXISTS table2;
+
+CREATE TABLE table1 (
+    id INT,
+    var1 VARCHAR,
+    valid_from_dttm date,
+    valid_to_dttm date
+);
+
+CREATE TABLE table2 (
+    id INT,
+    var2 VARCHAR,
+    valid_from_dttm date,
+    valid_to_dttm date
+);
+
+INSERT INTO table1 (id, var1, valid_from_dttm, valid_to_dttm)
+VALUES (1, 'A', '2018-09-01', '2018-09-15'), (1, 'B', '2018-09-16', '5999-12-31');
+
+INSERT INTO table2 (id, var2, valid_from_dttm, valid_to_dttm)
+VALUES (1, 'A', '2018-09-01', '2018-09-18'), (1, 'B', '2018-09-19', '5999-12-31');
+
+
+SELECT t1.id, t1.var1, t2.var2,
+       GREATEST(t1.valid_from_dttm, t2.valid_from_dttm) as valid_from_dttm,
+       LEAST(t1.valid_to_dttm, t2.valid_to_dttm) as valid_to_dttm
+FROM table1 t1
+LEFT JOIN table2 t2 ON
+    t1.id = t2.id AND
+    t2.valid_from_dttm <= t1.valid_to_dttm AND
+    t1.valid_from_dttm <= t2.valid_to_dttm;
+
+
+-- имена всех судей, которые судили соревнования, в которых участвовали школы с 3 по 5
+
+SELECT DISTINCT c.id, j.id, prJ.*
+FROM lab_01.public.competition c
+JOIN participant p on c.id = p.competition
+JOIN lab_01.public.profile pr on p.profile = pr.id
+JOIN lab_01.public.judge j on c.id = j.competition
+JOIN lab_01.public.profile prJ on j.profile = prJ.id
+WHERE pr.school in (3)
